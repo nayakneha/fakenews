@@ -11,7 +11,6 @@ def main():
 
   for file_name in os.listdir("/home/nnayak/fakenews/examples/"):
     os.system(command_line.format(file_name))
-    break
 
 if __name__ == "__main__":
   main()
