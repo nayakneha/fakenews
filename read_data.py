@@ -1,5 +1,6 @@
 import sklearn
 import csv
+import os
 
 class Label(object):
   UNRELATED='unrelated'
@@ -7,10 +8,17 @@ class Label(object):
   DISAGREE='disagree'
   DISCUSS='discuss'
 
+class FileType(object):
+  STANCE='stance'
+  HEADLINE='headline'
+  BODY='body'
+
 ID_hdr = "Body ID"
 BODY_hdr = "articleBody"
 HEADLINE_hdr = "Headline"
 STANCE_hdr = "Stance"
+
+OUTPUT_DIR = "/home/nnayak/fakenews/examples/"
 
 VALID_LABELS = [Label.UNRELATED, Label.AGREE, Label.DISCUSS, Label.DISAGREE]
 
@@ -22,6 +30,9 @@ class Example(object):
     self.stance = stance
     self.identifier = identifier
 
+def get_file_name(key, file_type):
+  key_str = key.zfill(4)
+  return "".join([OUTPUT_DIR, key_str, ".", file_type])
 
 def read_data(data_path):
   bodies_dict = {}
@@ -38,24 +49,17 @@ def read_data(data_path):
       assert row[STANCE_hdr] in VALID_LABELS
       stances_dict[row[ID_hdr]] = (row[HEADLINE_hdr], row[STANCE_hdr])
 
-  examples = []
+  file_types = [FileType.STANCE, FileType.HEADLINE, FileType.BODY]
 
   for key in bodies_dict.keys():
     headline, stance = stances_dict[key]
-    examples.append(Example(headline, bodies_dict[key], stance, key))
-
-  return examples
-
-def featurize(example):
-  return example
-
-def featurize_examples(examples):
-  return [featurize(example) for example in examples]
-
+    for text, file_type in zip([stance, headline, bodies_dict[key]],
+        file_types):
+      with open(get_file_name(key, file_type), 'w') as f:
+        f.write(text)
 
 def main():
   read_data(None)
-  pass
 
 if __name__ == "__main__":
   main()
