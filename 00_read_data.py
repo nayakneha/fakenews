@@ -42,21 +42,40 @@ def read_data(data_path):
       print(row)
       bodies_dict[str(row[ID_hdr])] = row[BODY_hdr]
 
-  stances_dict = {}
+  headlines = set()
   with open("/home/nnayak/other_repos/fnc-1/train_stances.csv") as csv_file:
-    stance_reader = csv.DictReader(csv_file)
-    for row in stance_reader:
-      assert row[STANCE_hdr] in VALID_LABELS
-      stances_dict[row[ID_hdr]] = (row[HEADLINE_hdr], row[STANCE_hdr])
+    stance_reader = csv.reader(csv_file)
+    for i, row in enumerate(stance_reader):
+      headline, body_id, stance = row
+      headlines.add(headline)
+
+  headline_list = sorted(list(headlines))
+  headline_map = { headline: str(headline_list.index(headline)).zfill(4)
+                   for headline in headline_list}
+
+  with open("/home/nnayak/other_repos/fnc-1/headline_map.csv",
+         'w') as output_csv_file:
+   headline_writer = csv.writer(output_csv_file)
+   for headline, headline_id in headline_map.iteritems():
+     headline_writer.writerow([headline, headline_id])
+
+
+   with open("/home/nnayak/other_repos/fnc-1/train_stances.csv") as csv_file:
+     stance_reader = csv.reader(csv_file)
+     for i, row in enumerate(stance_reader):
+       headline, body_id, stance = row
+       headline_id = headline_map[headline]
+       with open(get_file_name(headline_id, FileType.HEADLINE), 'w') as f:
+         f.write(headline)
 
   file_types = [FileType.STANCE, FileType.HEADLINE, FileType.BODY]
 
-  for key in bodies_dict.keys():
-    headline, stance = stances_dict[key]
-    for text, file_type in zip([stance, headline, bodies_dict[key]],
-        file_types):
-      with open(get_file_name(key, file_type), 'w') as f:
-        f.write(text)
+  #for key in bodies_dict.keys():
+  #  headline, stance = stances_dict[key]
+  #  for text, file_type in zip([stance, headline, bodies_dict[key]],
+  #      file_types):
+  #    with open(get_file_name(key, file_type), 'w') as f:
+  #      f.write(text)
 
 def main():
   read_data(None)

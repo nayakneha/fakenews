@@ -2,6 +2,8 @@ import collections
 import lxml.etree as ET
 
 REQUIRED_TAGS = ['word', 'lemma', 'POS']
+STANCES = ['agree', 'disagree', 'discuss', 'unrelated']
+
 
 class DependencyNode(object):
   def __init__(self, idx, text, governor_idx, dep_type):
@@ -10,6 +12,7 @@ class DependencyNode(object):
     self.governor_idx= governor_idx
     self.dep_type = dep_type
     self.children = []
+
 
 class DependencyParse(object):
   def __init__(self):
@@ -35,18 +38,27 @@ class DependencyParse(object):
         continue
       self.nodes[node.governor_idx].children.append((node.dep_type, node))
 
+
 class Sentence(object):
-  def __init__(self, xml_sentence):
-    assert xml_sentence.tag == "sentence"
+  def __init__(self, sentence_xml):
+    xml_sentence = ET.XML(sentence_xml)
+    if xml_sentence.tag != "sentence":
+      for i in xml_sentence:
+        if i.tag == "document":
+          for sentences in i:
+            if sentences.tag == "sentences":
+              sentence_xml = sentences[0]
+              break
+    else:
+      sentence_xml = xml_sentence #TODO: fix this horrible thing
 
     self.dependency_parse = DependencyParse()
 
-    for elem in xml_sentence:
+    for elem in sentence_xml:
       if elem.tag == "tokens":
         self.tokens = self.add_tokens(elem)
       else:
         assert elem.tag == "dependencies"
-        print(ET.tostring(elem, pretty_print=True))
         for dep in elem:
           self.dependency_parse.add_dependency(dep)
     self.dependency_parse.assemble_tree()
@@ -59,64 +71,46 @@ class Sentence(object):
           tag_lists[child.tag].append(child.text)
     return tag_lists
 
+
+class Headline(object):
+  def __init__(self, headline_xml, headline_number):
+    print(headline_number)
+    self.sentence = Sentence(headline_xml)
+    self.headline_number = headline_number
+
+
+class Body(object):
+  def __init__(self, body_xml, body_number):
+    xml_body = ET.XML(body_xml)
+    for i in xml_body:
+      if i.tag == "document":
+        for sentences in i:
+          if sentences.tag == "sentences":
+            self.sentences = [Sentence(ET.tostring(sentence_xml)) for
+                sentence_xml in sentences]
+    self.body_number = body_number
+
+
 class Example(object):
-  def __init__(self, headline, body_xml):
-    self.headline = Sentence(headline)
-    self.body = [Sentence(sentence_xml) for sentence_xml in body_xml]
-    self.headline_lemmas = self.headline.token_map["lemma"]
-    self.body_lemmas = sum([sentence.token_map["lemma"]
-                            for sentence in self.body], [])
+  def __init__(self, headline_number, body_number, stance=None):
+    self.headline_number = headline_number
+    self.body_number = body_number
+    assert stance is None or stance in STANCES
+    self.stance = stance
 
-class FeatureSets(object):
-  HEADLINE_UNIGRAMS = "headline_unigrams"
-  HEADLINE_BIGRAMS = "headline_bigrams"
-  BODY_UNIGRAMS = "body_unigrams"
-  BODY_BIGRAMS = "body_bigrams"
-  UNIGRAM_INTERSECTION = "unigram_intersection"
-  BIGRAM_INTERSECTION = "bigram_intersection"
+class Dataset(object):
+  def __init__(self, headlines_xml_map, bodies_xml_map, examples):
+    self.headlines_map = {}
+    for headline_number, headline_xml in headlines_xml_map.iteritems():
+      self.headlines_map[headline_number] = Headline(headline_xml, headline_number)
 
-def tag_features(features, tag):
-  return [tag + "_" + feature for feature in features]
+    self.bodies_map = {}
+    for body_number, body_xml in bodies_xml_map.iteritems():
+      self.bodies_map[body_number] = Body(body_xml, body_number)
 
-def featurize(example, feature_set):
-  features = []
+    self.examples = examples
 
-  if FeatureSets.HEADLINE_UNIGRAMS in feature_set:
-    features += tag_features(example.headline_lemmas,
-        FeatureSets.HEADLINE_UNIGRAMS))
+    print(self.headlines_map.values()[0])
+    print(self.bodies_map.values()[0])
 
-  if FeatureSets.HEADLINE_BIGRAMS in feature_set:
-    features += tag_features(bigrams(example.headline_lemmas),
-        FeatureSets.HEADLINE_BIGRAMS))
 
-  if FeatureSets.BODY_UNIGRAMS in feature_set:
-    features += tag_features(example.body_lemmas,
-        FeatureSets.BODY_UNIGRAMS))
-
-  if FeatureSets.BODY_BIGRAMS in feature_set:
-    features += tag_features(bigrams(example.body_lemmas),
-        FeatureSets.BODY_BIGRAMS))
-
-  if FeatureSets.UNIGRAM_INTERSECTION in feature_set:
-    features += tag_features(unigram_intersection(example),
-        FeatureSets.UNIGRAM_INTERSECTION)
-
-  if FeatureSets.BIGRAM_INTERSECTION in feature_set:
-    features += tag_features(bigram_intersection(example),
-        FeatureSets.BIGRAM_INTERSECTION)
-
- return features
-
-def unigram_intersection(example):
-  intersection =
-  set(example.headline_lemmas).intersection(set(example.body_lemmas))
-  return list(intersection)
-
-def unigram_intersection(example):
-  intersection = set(bigrams(example.headline_lemmas)).intersection(
-          set(bigrams(example.body_lemmas)))
-  return list(intersection)
-
-def bigrams(tokens):
-  return ["_".join([token1, token2])
-        for token1, token2 in zip(tokens[:-1], tokens[1:])]
