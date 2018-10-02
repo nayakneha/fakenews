@@ -36,7 +36,7 @@ def featurize(example, dataset, feature_set):
     features += tag_features(bigram_intersection(example, dataset),
         FeatureSets.BIGRAM_INTERSECTION)
 
-  return features
+  return " ".join(features)
 
 def unigram_intersection(example, dataset):
   intersection = set(

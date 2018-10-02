@@ -3,6 +3,9 @@ import sys
 import numpy as np
 from sklearn.linear_model import LogisticRegression
 from sklearn import datasets
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.model_selection import cross_val_score
+from sklearn.metrics import accuracy_score
 
 import fakenews_lib
 import fakenews_features
@@ -13,10 +16,6 @@ def sklearn_stuff():
   X = iris.data[:, :2]  # we only take the first two features.
   Y = iris.target
 
-  logreg = LogisticRegression(C=1e5, solver='lbfgs', multi_class='multinomial')
-
-  # we create an instance of Neighbours Classifier and fit the data.
-  logreg.fit(X, Y)
 
   # cross validation
   scores = cross_val_score(
@@ -29,12 +28,11 @@ def featurize_dataset(dataset, feature_set):
   examples = []
   labels = []
 
-  for example in dataset.examples[:20]:
-    try:
-      examples.append(fakenews_features.featurize(example, dataset, feature_set))
-      labels.append(example.stance)
-    except KeyError:
-      continue
+  for example in dataset.examples:
+    examples.append(fakenews_features.featurize(example, dataset, feature_set))
+    labels.append(fakenews_lib.STANCES.index(example.stance))
+
+  return examples, np.array(labels)
 
 
 def main():
@@ -42,7 +40,19 @@ def main():
   with open(dataset_path, 'r') as f:
     dataset = pickle.load(f)
   print(dataset)
-  featurize_dataset(dataset, fakenews_features.FeatureSets.UNIGRAM_INTERSECTION)
+  examples, labels = featurize_dataset(dataset,
+      [fakenews_features.FeatureSets.UNIGRAM_INTERSECTION,
+        fakenews_features.FeatureSets.HEADLINE_BIGRAMS])
+  vectorizer =  CountVectorizer()
+  X = vectorizer.fit_transform(examples)
+  print(X)
+
+  logreg = LogisticRegression(C=1e5, solver='lbfgs', multi_class='multinomial')
+
+  # we create an instance of Neighbours Classifier and fit the data.
+  scores = cross_val_score(logreg, X, labels, cv=10)
+  print(scores)
+
 
 if __name__ == "__main__":
   main()

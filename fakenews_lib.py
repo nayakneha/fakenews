@@ -93,8 +93,8 @@ class Body(object):
 
 class Example(object):
   def __init__(self, headline_number, body_number, stance=None):
-    self.headline_number = headline_number
-    self.body_number = body_number
+    self.headline_number = headline_number.zfill(4)
+    self.body_number = body_number.zfill(4)
     assert stance is None or stance in STANCES
     self.stance = stance
 
