@@ -40,7 +40,6 @@ def main():
     _ = stances_reader.next()
     for row in stances_reader:
       headline, body_id, stance = row
-      print stance
       examples.append(fakenews_lib.Example(
         headline_number_map[headline], body_id, stance))
 

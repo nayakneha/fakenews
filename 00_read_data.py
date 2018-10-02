@@ -39,7 +39,6 @@ def read_data(data_path):
   with open("/home/nnayak/other_repos/fnc-1/train_bodies.csv") as csv_file:
     article_reader = csv.DictReader(csv_file)
     for row in article_reader:
-      print(row)
       bodies_dict[str(row[ID_hdr])] = row[BODY_hdr]
 
   headlines = set()

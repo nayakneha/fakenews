@@ -62,6 +62,7 @@ class Sentence(object):
         for dep in elem:
           self.dependency_parse.add_dependency(dep)
     self.dependency_parse.assemble_tree()
+    self.lemmas = self.tokens['lemma']
 
   def add_tokens(self, tokens):
     tag_lists = collections.defaultdict(list)
@@ -74,7 +75,6 @@ class Sentence(object):
 
 class Headline(object):
   def __init__(self, headline_xml, headline_number):
-    print(headline_number)
     self.sentence = Sentence(headline_xml)
     self.headline_number = headline_number
 
@@ -98,6 +98,14 @@ class Example(object):
     assert stance is None or stance in STANCES
     self.stance = stance
 
+  def headline_lemmas(self, dataset):
+    return dataset.headlines_map[self.headline_number].sentence.lemmas
+
+  def body_lemmas(self, dataset):
+    return sum([sentence.lemmas for sentence in
+        dataset.bodies_map[self.body_number].sentences], [])
+
+
 class Dataset(object):
   def __init__(self, headlines_xml_map, bodies_xml_map, examples):
     self.headlines_map = {}
@@ -109,8 +117,3 @@ class Dataset(object):
       self.bodies_map[body_number] = Body(body_xml, body_number)
 
     self.examples = examples
-
-    print(self.headlines_map.values()[0])
-    print(self.bodies_map.values()[0])
-
-
