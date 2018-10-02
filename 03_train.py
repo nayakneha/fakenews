@@ -6,6 +6,8 @@ from sklearn import datasets
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.model_selection import cross_val_score
 from sklearn.metrics import accuracy_score
+from sklearn.metrics import confusion_matrix
+from sklearn.metrics import f1_score
 
 import fakenews_lib
 import fakenews_features
@@ -39,19 +41,21 @@ def main():
   dataset_path = sys.argv[1]
   with open(dataset_path, 'r') as f:
     dataset = pickle.load(f)
-  print(dataset)
   examples, labels = featurize_dataset(dataset,
-      [fakenews_features.FeatureSets.UNIGRAM_INTERSECTION,
-        fakenews_features.FeatureSets.HEADLINE_BIGRAMS])
+      [
+        #fakenews_features.FeatureSets.UNIGRAM_INTERSECTION,
+        fakenews_features.FeatureSets.OPEN_CLASS_INTERSECTION,
+        fakenews_features.FeatureSets.HEADLINE_UNIGRAMS])
   vectorizer =  CountVectorizer()
   X = vectorizer.fit_transform(examples)
-  print(X)
 
   logreg = LogisticRegression(C=1e5, solver='lbfgs', multi_class='multinomial')
-
-  # we create an instance of Neighbours Classifier and fit the data.
-  scores = cross_val_score(logreg, X, labels, cv=10)
+  logreg.fit(X, labels)
+  y_pred = logreg.predict(X)
+  print(confusion_matrix(logreg.predict(X), labels))
+  scores = cross_val_score(logreg, X, labels, cv=10,scoring="f1_macro")
   print(scores)
+  print sum(scores)/float(len(scores))
 
 
 if __name__ == "__main__":

@@ -1,3 +1,4 @@
+
 class FeatureSets(object):
   HEADLINE_UNIGRAMS = "headline_unigrams"
   HEADLINE_BIGRAMS = "headline_bigrams"
@@ -5,6 +6,7 @@ class FeatureSets(object):
   BODY_BIGRAMS = "body_bigrams"
   UNIGRAM_INTERSECTION = "unigram_intersection"
   BIGRAM_INTERSECTION = "bigram_intersection"
+  OPEN_CLASS_INTERSECTION = "open_class_intersection"
 
 def tag_features(features, tag):
   return [tag + "$" + feature for feature in features]
@@ -36,6 +38,10 @@ def featurize(example, dataset, feature_set):
     features += tag_features(bigram_intersection(example, dataset),
         FeatureSets.BIGRAM_INTERSECTION)
 
+  if FeatureSets.OPEN_CLASS_INTERSECTION in feature_set:
+    features += tag_features(open_class_intersection(example, dataset),
+        FeatureSets.OPEN_CLASS_INTERSECTION)
+
   return " ".join(features)
 
 def unigram_intersection(example, dataset):
@@ -46,6 +52,11 @@ def unigram_intersection(example, dataset):
 def bigram_intersection(example, dataset):
   intersection = set(bigrams(example.headline_lemmas(dataset))).intersection(
           set(bigrams(example.body_lemmas(dataset))))
+  return list(intersection)
+
+def open_class_intersection(example, dataset):
+  intersection = set(example.headline_open_class(dataset)).intersection(
+          set(example.body_open_class(dataset)))
   return list(intersection)
 
 def bigrams(tokens):

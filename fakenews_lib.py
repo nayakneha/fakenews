@@ -4,6 +4,8 @@ import lxml.etree as ET
 REQUIRED_TAGS = ['word', 'lemma', 'POS']
 STANCES = ['agree', 'disagree', 'discuss', 'unrelated']
 
+OPEN_CLASS_TAGS = ["JJ", "JJR", "JJS", "NN", "NNS", "NNP", "NNPS",
+    "RB", "RBR", "VB", "VBD", "VBG", "VBN", "VBP", "VBZ"]
 
 class DependencyNode(object):
   def __init__(self, idx, text, governor_idx, dep_type):
@@ -63,6 +65,8 @@ class Sentence(object):
           self.dependency_parse.add_dependency(dep)
     self.dependency_parse.assemble_tree()
     self.lemmas = self.tokens['lemma']
+    self.open_class = [lemma for lemma, pos in zip(self.tokens['lemma'],
+      self.tokens['POS']) if pos in OPEN_CLASS_TAGS]
 
   def add_tokens(self, tokens):
     tag_lists = collections.defaultdict(list)
@@ -104,6 +108,14 @@ class Example(object):
   def body_lemmas(self, dataset):
     return sum([sentence.lemmas for sentence in
         dataset.bodies_map[self.body_number].sentences], [])
+
+  def headline_open_class(self, dataset):
+    return dataset.headlines_map[self.headline_number].sentence.open_class
+
+  def body_open_class(self, dataset):
+    return sum([sentence.open_class for sentence in
+        dataset.bodies_map[self.body_number].sentences], [])
+
 
 
 class Dataset(object):
